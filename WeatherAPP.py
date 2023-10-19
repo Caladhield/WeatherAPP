@@ -94,7 +94,7 @@ def get_openweathermap_data():
         weather_data = []
         
         now = datetime.now()
-        next_24_hours = now + pd.DateOffset(hours=24)
+        next_24_hours = now + pd.DateOffset(hours=23)
         time_in_24_hours = int(next_24_hours.timestamp())
 
         for item in data['hourly']:
