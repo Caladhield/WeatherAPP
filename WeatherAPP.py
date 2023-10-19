@@ -10,7 +10,7 @@ latitude = 59.30996552541549
 smhi_url = f'https://opendata-download-metfcst.smhi.se/api/category/pmp3g/version/2/geotype/point/lon/{longitude:.6f}/lat/{latitude:.6f}/data.json'
 
 openweathermap_api_key = 'fa49fd29427dc75eb3b4febb8fa2c1b1'
-openweathermap_url = f'https://api.openweathermap.org/data/2.5/forecast?lat={latitude}&lon={longitude}&appid={openweathermap_api_key}'
+openweathermap_url = f'https://api.openweathermap.org/data/3.0/onecall?lat=59.30&lon=18.02&exclude=minutely&appid={openweathermap_api_key}'
 
 def get_smhi_data():
     response = requests.get(smhi_url)
@@ -35,11 +35,11 @@ def get_smhi_data():
                 precipitation = 0
                 provider = 'SMHI'
 
-                for parameter in time_series['parameters']:
-                    if parameter['name'] == 't':
-                        temperature = parameter['values'][0] # 0 because it only has 1 item in the list and thats the value we want
-                    elif parameter['name'] == 'r':
-                        precipitation = parameter['values'][0]
+                for items in time_series['parameters']:
+                    if items['name'] == 't':
+                        temperature = items['values'][0] # 0 because it only has 1 item in the list and thats the value we want
+                    elif items['name'] == 'pcat':
+                        precipitation = items['values'][0]
                 
                 if precipitation > 0: 
                     precipitation = "Precipitation"
@@ -57,13 +57,13 @@ def get_smhi_data():
                     'Provider': provider,
                 })
 
-        weather_dataframe = pd.DataFrame(weather_data)
+        dataframe = pd.DataFrame(weather_data)
         
         file_path = "Weather_data_SMHI.xlsx"
 
         excel = pd.ExcelWriter(file_path, engine='openpyxl')
 
-        weather_dataframe.to_excel(excel, index=False, sheet_name='SmhiData')
+        dataframe.to_excel(excel, index=False, sheet_name='SmhiData')
 
         workbook = excel.book
         worksheet = excel.sheets['SmhiData']
@@ -88,30 +88,31 @@ def get_openweathermap_data():
     response = requests.get(openweathermap_url)       
     if response.status_code == 200:
         data = response.json()
-
+        
         current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
         weather_data = []
-
+        
         now = datetime.now()
         next_24_hours = now + pd.DateOffset(hours=24)
-        timestamp_24_hours = int(next_24_hours.timestamp())
+        time_in_24_hours = int(next_24_hours.timestamp())
 
-        for time_interval in data['list']:
-            timestamp = time_interval['dt']
-            if timestamp <= timestamp_24_hours:
-                temp_kelvin = time_interval['main']['temp']
+        for item in data['hourly']:
+            time = item['dt']
+            if time > now.timestamp() and time <= time_in_24_hours:
+                temp_kelvin = item['temp']
                 temp_celsius = temp_kelvin - 273.15
-                weather = time_interval['weather'][0]['main']
-
-                hour = datetime.utcfromtimestamp(timestamp).strftime('%H')
+                weather = item['weather'][0]['main']
+                hour = datetime.utcfromtimestamp(time).strftime('%H')
                 local_time = int(hour)+1
-                date = datetime.utcfromtimestamp(timestamp).strftime('%Y-%m-%d')
+                date = datetime.utcfromtimestamp(time).strftime('%Y-%m-%d')
 
                 if weather == 'Rain':
                     precipitation = 'Rain'
                 elif weather == 'Snow':
                     precipitation = 'Snow'
+                elif weather == 'Drizzle':
+                    precipitation == 'Drizzle'
                 else:
                     precipitation = 'No precipitation'
 
@@ -164,7 +165,6 @@ def combine_and_save_data():
     excel = pd.ExcelWriter(file_path, engine='openpyxl')
 
     combined_data.to_excel(excel, index=False, sheet_name='WeatherData')
-
     workbook = excel.book
     worksheet = excel.sheets['WeatherData']
 
