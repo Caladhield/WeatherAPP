@@ -105,6 +105,7 @@ def get_openweathermap_data():
                 weather = time_interval['weather'][0]['main']
 
                 hour = datetime.utcfromtimestamp(timestamp).strftime('%H')
+                local_time = int(hour)+1
                 date = datetime.utcfromtimestamp(timestamp).strftime('%Y-%m-%d')
 
                 if weather == 'Rain':
@@ -119,7 +120,7 @@ def get_openweathermap_data():
                     'Longitude': longitude,
                     'Latitude': latitude,
                     'Date': date,
-                    'Hour': hour,
+                    'Hour': local_time,
                     'Temperature (°C)': temp_celsius,
                     'Precipitation': precipitation,
                     'Provider': 'OWM',
