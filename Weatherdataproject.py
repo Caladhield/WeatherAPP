@@ -84,7 +84,11 @@ def get_openweathermap_data():
                 date = timestamp_sweden.strftime('%Y-%m-%d')
                 hour = timestamp_sweden.strftime('%H')
 
-                precipitation = weather == 'Rain' or weather == 'Snow'
+                if weather == 'Rain' or weather == 'Snow':
+                    precipitation = True
+                else:
+                    precipitation = False
+
 
                 weather_data.append({
                     'Created': current_time,
